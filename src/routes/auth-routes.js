@@ -1,6 +1,7 @@
 // @ts-nocheck
 const logger = require("../config/logger");
 const userRegistration = require("../controllers/registerController");
+const TokenBlacklist = require( "../model/tokenBlackListModel" );
 const envJwtKey = require("../utill/envJwtKey");
 const generateToken = require("../utill/genToken");
 const validateBody = require("../utill/validateRgeistrationBody");
@@ -34,6 +35,7 @@ router.post("/register", async (req, res) => {
   res.send({ message: "User created successfully" });
 });
 
+//login route
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -72,4 +74,22 @@ router.post("/login", async (req, res) => {
     .json({ user: authenticatedUser, message: "login successful" });
 });
 
+//logout route
+router.post("/logout", (req, res) => {
+  const token = req.header("Authorization");
+
+  if (!token) {
+    logger.error("Logout request failed: No token provided");
+    return res.status(400).send({ message: "No token provided" });
+  }
+
+  // Invalidate the token (implementation depends on your token management strategy)
+  // For example, you could add the token to a blacklist
+
+  await new TokenBlacklist( { token } ).save()
+  logger.info( 'token has been blacklisted' )
+  
+  logger.info("User logged out successfully");
+  res.status(200).send({ message: "Logout successful" });
+});
 module.exports = router;
