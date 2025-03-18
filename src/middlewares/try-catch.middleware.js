@@ -1,6 +1,6 @@
 const logger = require( "../config/logger" );
 
-module.exports = function tryCatch_md(handler) {
+module.exports = function thtryCatch_md(handler) {
   return async (req, res, next) => {
     try {
       await handler(req, res, next);
@@ -12,4 +12,3 @@ module.exports = function tryCatch_md(handler) {
     }
   };
 };
-
