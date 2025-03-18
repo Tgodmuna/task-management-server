@@ -2,45 +2,92 @@
 const express = require("express");
 const Task = require("../model/taskModel");
 const User = require("../model/userModel");
+const tryCatchMiddleware = require("../middlewares/try-catch.middleware");
+const userModel = require("../model/userModel");
 
 const router = express.Router();
 
 // Create a new task
-router.post("/createTask", async (req, res) => {
-  const task = new Task(req.body);
-  await task.save();
-  res.status(201).send(task);
+router.post(
+  "/createTask",
+  tryCatchMiddleware(async (req, res) => {
+    const { newTask } = req.body;
+    console.log({ newTask });
 
-  res.status(400).send(error);
-});
+    // Validate required fields
+    if (
+      !newTask.name ||
+      !newTask.estimation?.startDate ||
+      !newTask.estimation?.dueDate ||
+      !newTask.type
+    ) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Validate task schema
+    const taskInstance = new Task(newTask);
+    try {
+      await taskInstance.validate();
+    } catch (err) {
+      return res.status(400).json({ message: "Validation failed", errors: err.errors });
+    }
+
+    // Find people if provided
+    const { people } = newTask;
+    const peoples = people.length
+      ? await userModel.find({ email: { $in: people.map((v) => v) } })
+      : [];
+
+    console.log({ peoples });
+
+    // Create the task
+    const task = new Task({ ...newTask, people: peoples.map((p) => p._id) });
+    if (!task) return res.status(500).json({ error: "Task creation failed" });
+
+    await task.save();
+    return res.status(201).json({ task, message: "Task created successfully" });
+  })
+);
+
 
 // Read all tasks
-router.get("/readTasks", async (req, res) => {
-  const tasks = await Task.find();
-  res.status(200).send(tasks);
+router.get(
+  "/readTasks",
+  tryCatchMiddleware(async (req, res) => {
+    const tasks = await Task.find();
+    if (!tasks) return res.status(404).json([]);
 
-  res.status(500).send(error);
-});
+    return res.status(200).json({ tasks, message: "tasks retrirevd successfully" });
+  })
+);
 
 // Read a single task by ID
-router.get("/:id", async (req, res) => {
-  const task = await Task.findById(req.params.id);
+router.get("singlTask/:id", async (req, res) => {
+  const id = req.params.id;
+
+  if (!id) return res.sendStatus(400).send("no parameter provided");
+
+  if (!mongoose.Types.ObjectId.isValid(id))
+    return res.status(400).json({ error: "Invalid Task ID" });
+
+  const task = await Task.findById(id);
   if (!task) {
-    return res.status(404).send();
+    return res.status(404).send("no task found");
   }
-  res.status(200).send(task);
-  res.status(500).send(error);
+  return res.status(200).json(task);
 });
 
 // Update a task by ID
-router.patch("/:id", async (req, res) => {
+router.patch("updateTask/:id", async (req, res) => {
+  if (!req.body) return res.status(400).send("invalid request body");
+
   const updates = Object.keys(req.body);
   const allowedUpdates = [
     "name",
     "description",
     "estimation",
     "taskType",
-    "assignedUsers",
+    "people",
     "status",
     "priority",
   ];
@@ -52,26 +99,27 @@ router.patch("/:id", async (req, res) => {
 
   const task = await Task.findById(req.params.id);
   if (!task) {
-    return res.status(404).send();
+    return res.status(404).send("no task found,unable to update");
   }
 
   updates.forEach((update) => (task[update] = req.body[update]));
   await task.save();
-  res.status(200).send(task);
+  return res.status(200).send(task);
 });
 
 // Delete a task by ID
-router.delete("/:id", async (req, res) => {
+router.delete("delete/:id", async (req, res) => {
+  if (!req.params.id) return res.sendStatus(400).send("no parameter provided");
+
   const task = await Task.findByIdAndDelete(req.params.id);
   if (!task) {
-    return res.status(404).send();
+    return res.status(404).send("no task found,unable to delete");
   }
-  res.status(200).send(task);
-  res.status(500).send(error);
+  return res.status(200).send(task);
 });
 
 // Track date estimation
-router.post("/:id/trackEstimation", async (req, res) => {
+router.post("track/:id/trackEstimation", async (req, res) => {
   const task = await Task.findById(req.params.id);
   if (!task) {
     return res.status(404).send();
@@ -82,20 +130,21 @@ router.post("/:id/trackEstimation", async (req, res) => {
 });
 
 // Update task status
-router.patch( "/:id/updateStatus", async ( req, res ) => {
-    if ( !req.body.status )
-    {
-        
-    }
+router.patch("/:id/updateStatus", async (req, res) => {
+  if (!req.body.status) {
+    return res.status(400).send({ error: "Status is required" });
+  }
+
+  if (!req.params.id) return res.sendStatus(400).send("no parameter provided");
 
   const task = await Task.findById(req.params.id);
   if (!task) {
-    return res.status(404).send("no task found");
+    return res.status(404).send("no task found,unable to update status");
   }
 
   task.status = req.body.status;
   await task.save();
-  res.status(200).send(task);
+  return res.status(200).send(task);
 });
 
 // Invite a user for collaboration
