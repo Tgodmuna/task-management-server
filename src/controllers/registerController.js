@@ -18,7 +18,7 @@ const userRegistration = async (body) => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  const CreatedUser = await userModel.create({ name, email, hashedPassword });
+  const CreatedUser = await userModel.create({ name, email, password: hashedPassword });
 
   await CreatedUser.save();
 
