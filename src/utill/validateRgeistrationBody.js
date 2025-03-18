@@ -11,7 +11,7 @@ const Joi = require("joi");
 
 const bodySchema = Joi.object({
   name: Joi.string().required(),
-  email: Joi.string().email().required(),
+  email: Joi.string().email().required().pattern(new RegExp("^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$")),
   password: Joi.string().min(6).required(),
 });
 
@@ -25,7 +25,7 @@ function validateBody(body) {
   const { error } = bodySchema.validate(body);
 
   if (error) {
-    return error.details[0].message;
+    return error.message;
   }
 
   return null;
