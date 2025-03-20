@@ -21,7 +21,7 @@ try {
   logger.error(err.message);
   console.log(err.message);
 }
-app.use(cors({ origin: "http://localhost:3000" }));
+app.use(cors({ origin: "https://task-management-server-f0b0.onrender.com" }));
 app.use("/api/auth", require("./routes/auth-routes"));
 app.use(
   "/api/task",
