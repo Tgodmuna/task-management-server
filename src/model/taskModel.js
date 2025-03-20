@@ -2,13 +2,14 @@ const mongoose = require("mongoose");
 
 const TaskSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true },
+    taskName: { type: String, required: true },
     description: { type: String },
-    estimation: {
-      startDate: { type: Date, required: true },
-      dueDate: { type: Date, required: true },
-    },
-    taskType: { type: String, required: true },
+    // estimation: {
+    //   startDate: { type: Date, required: true },
+    //   dueDate: { type: Date, required: true },
+    // },
+    estimation:{type: String, required: true},
+    type: { type: String, required: true },
     people: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     status: {
       type: String,
