@@ -15,21 +15,8 @@ router.post(
     console.log({ newTask });
 
     // Validate required fields
-    if (
-      !newTask.name ||
-      !newTask.estimation?.startDate ||
-      !newTask.estimation?.dueDate ||
-      !newTask.type
-    ) {
+    if (!newTask.taskName || !newTask.estimation || !newTask.type) {
       return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    // Validate task schema
-    const taskInstance = new Task(newTask);
-    try {
-      await taskInstance.validate();
-    } catch (err) {
-      return res.status(400).json({ message: "Validation failed", errors: err.errors });
     }
 
     // Find people if provided
@@ -42,19 +29,40 @@ router.post(
 
     // Create the task
     const task = new Task({ ...newTask, people: peoples.map((p) => p._id) });
+
+    // Validate task schema
+    const taskInstance = new Task(task);
+    try {
+      await taskInstance.validate();
+    } catch (err) {
+      logger.error("Task validation failed", { error: err });
+
+      return res.status(400).json({ message: "Validation failed", errors: err.errors });
+    }
+
     if (!task) return res.status(500).json({ error: "Task creation failed" });
 
+    const userId = req.user.id;
+
+    // Update the user's model to include this task
+    const user = await User.findById(userId).populate("tasks");
+    if (!user) {
+      return res.status(404).send({ error: "unable to associate task with user" });
+    }
+
     await task.save();
+    user.tasks.push(task._id);
+    await user.save();
+
     return res.status(201).json({ task, message: "Task created successfully" });
   })
 );
-
 
 // Read all tasks
 router.get(
   "/readTasks",
   tryCatchMiddleware(async (req, res) => {
-    const tasks = await Task.find();
+    const tasks = await Task.find().populate("people", { name: 1, email: 1, profileUrl: 1 });
     if (!tasks) return res.status(404).json([]);
 
     return res.status(200).json({ tasks, message: "tasks retrirevd successfully" });
@@ -62,7 +70,7 @@ router.get(
 );
 
 // Read a single task by ID
-router.get("singlTask/:id", async (req, res) => {
+router.get("/singlTask/:id", async (req, res) => {
   const id = req.params.id;
 
   if (!id) return res.sendStatus(400).send("no parameter provided");
@@ -78,15 +86,17 @@ router.get("singlTask/:id", async (req, res) => {
 });
 
 // Update a task by ID
-router.patch("updateTask/:id", async (req, res) => {
-  if (!req.body) return res.status(400).send("invalid request body");
+router.patch("/updateTask/:id", async (req, res) => {
+  if ( !req.body ) return res.status( 400 ).send( "invalid request body" );
+  
+  console.log(req.body)
 
   const updates = Object.keys(req.body);
   const allowedUpdates = [
-    "name",
+    "taskName",
     "description",
     "estimation",
-    "taskType",
+    "type",
     "people",
     "status",
     "priority",
@@ -108,7 +118,7 @@ router.patch("updateTask/:id", async (req, res) => {
 });
 
 // Delete a task by ID
-router.delete("delete/:id", async (req, res) => {
+router.delete("/delete/:id", async (req, res) => {
   if (!req.params.id) return res.sendStatus(400).send("no parameter provided");
 
   const task = await Task.findByIdAndDelete(req.params.id);
@@ -119,7 +129,7 @@ router.delete("delete/:id", async (req, res) => {
 });
 
 // Track date estimation
-router.post("track/:id/trackEstimation", async (req, res) => {
+router.post("/track/:id/trackEstimation", async (req, res) => {
   const task = await Task.findById(req.params.id);
   if (!task) {
     return res.status(404).send();
