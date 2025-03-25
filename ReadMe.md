@@ -33,26 +33,29 @@ The server will start on `http://localhost:3000`.
 
 #### Get all tasks
 
-- **URL:** `/tasks`
+- **URL:** `/readTasks`
 - **Method:** `GET`
 - **Description:** Retrieve all tasks.
 - **Response:**
 
     ```json
-    [
-        {
-            "id": "1",
-            "title": "Task 1",
-            "description": "Description for task 1",
-            "completed": false
-        },
-        ...
-    ]
+    {
+        "tasks": [
+            {
+                "id": "1",
+                "taskName": "Task 1",
+                "description": "Description for task 1",
+                "completed": false
+            },
+            ...
+        ],
+        "message": "tasks retrieved successfully"
+    }
     ```
 
 #### Get a task by ID
 
-- **URL:** `/tasks/:id`
+- **URL:** `/singlTask/:id`
 - **Method:** `GET`
 - **Description:** Retrieve a task by its ID.
 - **Response:**
@@ -60,7 +63,7 @@ The server will start on `http://localhost:3000`.
     ```json
     {
         "id": "1",
-        "title": "Task 1",
+        "taskName": "Task 1",
         "description": "Description for task 1",
         "completed": false
     }
@@ -68,15 +71,19 @@ The server will start on `http://localhost:3000`.
 
 #### Create a new task
 
-- **URL:** `/tasks`
+- **URL:** `/createTask`
 - **Method:** `POST`
 - **Description:** Create a new task.
 - **Request Body:**
 
     ```json
     {
-        "title": "New Task",
-        "description": "Description for the new task"
+        "newTask": {
+            "taskName": "New Task",
+            "description": "Description for the new task",
+            "estimation": "2 hours",
+            "type": "Development"
+        }
     }
     ```
 
@@ -84,23 +91,26 @@ The server will start on `http://localhost:3000`.
 
     ```json
     {
-        "id": "2",
-        "title": "New Task",
-        "description": "Description for the new task",
-        "completed": false
+        "task": {
+            "id": "2",
+            "taskName": "New Task",
+            "description": "Description for the new task",
+            "completed": false
+        },
+        "message": "Task created successfully"
     }
     ```
 
 #### Update a task
 
-- **URL:** `/tasks/:id`
-- **Method:** `PUT`
+- **URL:** `/updateTask/:id`
+- **Method:** `PATCH`
 - **Description:** Update an existing task.
 - **Request Body:**
 
     ```json
     {
-        "title": "Updated Task",
+        "taskName": "Updated Task",
         "description": "Updated description",
         "completed": true
     }
@@ -111,7 +121,7 @@ The server will start on `http://localhost:3000`.
     ```json
     {
         "id": "1",
-        "title": "Updated Task",
+        "taskName": "Updated Task",
         "description": "Updated description",
         "completed": true
     }
@@ -119,17 +129,59 @@ The server will start on `http://localhost:3000`.
 
 #### Delete a task
 
-- **URL:** `/tasks/:id`
+- **URL:** `/delete/:id`
 - **Method:** `DELETE`
 - **Description:** Delete a task by its ID.
 - **Response:**
 
     ```json
     {
-        "message": "Task deleted successfully"
+        "id": "1",
+        "taskName": "Deleted Task",
+        "description": "Description for the deleted task",
+        "completed": false
     }
     ```
 
+#### Track date estimation
+
+- **URL:** `/track/:id/trackEstimation`
+- **Method:** `POST`
+- **Description:** Track date estimation for a task.
+- **Request Body:**
+
+    ```json
+    {
+        "estimation": "3 hours"
+    }
+    ```
+
+- **Response:**
+
+    ```json
+    {
+        "id": "1",
+        "taskName": "Task 1",
+        "description": "Description for task 1",
+        "estimation": "3 hours",
+        "completed": false
+    }
+    ```
+
+#### Update task status
+
+- **URL:** `/:id/updateStatus`
+- **Method:** `PATCH`
+- **Description:** Update the status of a task.
+- **Request Body:**
+
+    ```json
+    {
+        "status": "In Progress"
+    }
+    ```
+
+-
 ## Project Structure
 
 ```
